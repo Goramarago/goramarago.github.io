@@ -1,0 +1,651 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Hypertension | 인디 게임 개발</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg:       #0a0a0f;
+      --bg2:      #12121a;
+      --bg3:      #1a1a26;
+      --accent:   #e0193a;
+      --accent2:  #ff4d6d;
+      --text:     #f0f0f5;
+      --muted:    #7a7a99;
+      --border:   rgba(224, 25, 58, 0.2);
+    }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Segoe UI', 'Apple SD Gothic Neo', sans-serif;
+      line-height: 1.6;
+      overflow-x: hidden;
+    }
+
+    /* ── NAV ── */
+    nav {
+      position: fixed;
+      top: 0; left: 0; right: 0;
+      z-index: 100;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 1.2rem 6vw;
+      background: rgba(10, 10, 15, 0.85);
+      backdrop-filter: blur(12px);
+      border-bottom: 1px solid var(--border);
+    }
+
+    .logo {
+      font-size: 1.3rem;
+      font-weight: 800;
+      letter-spacing: 0.08em;
+      color: var(--text);
+      text-decoration: none;
+    }
+    .logo span { color: var(--accent); }
+
+    nav ul {
+      list-style: none;
+      display: flex;
+      gap: 2.5rem;
+    }
+    nav ul a {
+      color: var(--muted);
+      text-decoration: none;
+      font-size: 0.9rem;
+      letter-spacing: 0.04em;
+      transition: color 0.2s;
+    }
+    nav ul a:hover { color: var(--text); }
+
+    /* ── HERO ── */
+    .hero {
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      padding: 8rem 6vw 4rem;
+      position: relative;
+      overflow: hidden;
+    }
+
+    /* EKG background line */
+    .ekg-wrap {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      opacity: 0.06;
+      pointer-events: none;
+    }
+    .ekg-wrap svg { width: 120%; }
+
+    @keyframes ekg-move {
+      from { transform: translateX(0); }
+      to   { transform: translateX(-50%); }
+    }
+    .ekg-line {
+      animation: ekg-move 4s linear infinite;
+    }
+
+    /* radial glow */
+    .hero::before {
+      content: '';
+      position: absolute;
+      top: 50%; left: 50%;
+      transform: translate(-50%, -50%);
+      width: 700px; height: 700px;
+      background: radial-gradient(circle, rgba(224,25,58,0.15) 0%, transparent 70%);
+      pointer-events: none;
+    }
+
+    .hero-eyebrow {
+      font-size: 0.78rem;
+      letter-spacing: 0.25em;
+      text-transform: uppercase;
+      color: var(--accent);
+      margin-bottom: 1.4rem;
+    }
+
+    .hero h1 {
+      font-size: clamp(3rem, 8vw, 7rem);
+      font-weight: 900;
+      letter-spacing: -0.02em;
+      line-height: 1.05;
+      margin-bottom: 1.5rem;
+    }
+    .hero h1 .red { color: var(--accent); }
+
+    .hero-sub {
+      font-size: clamp(1rem, 2.5vw, 1.3rem);
+      color: var(--muted);
+      max-width: 480px;
+      margin-bottom: 2.8rem;
+    }
+
+    .btn {
+      display: inline-block;
+      padding: 0.85rem 2.2rem;
+      border-radius: 4px;
+      font-size: 0.9rem;
+      font-weight: 700;
+      letter-spacing: 0.06em;
+      text-decoration: none;
+      transition: all 0.2s;
+      cursor: pointer;
+      border: none;
+    }
+    .btn-primary {
+      background: var(--accent);
+      color: #fff;
+    }
+    .btn-primary:hover {
+      background: var(--accent2);
+      transform: translateY(-2px);
+      box-shadow: 0 8px 24px rgba(224,25,58,0.35);
+    }
+    .btn-outline {
+      background: transparent;
+      color: var(--text);
+      border: 1px solid rgba(240,240,245,0.25);
+      margin-left: 1rem;
+    }
+    .btn-outline:hover {
+      border-color: var(--accent);
+      color: var(--accent);
+    }
+
+    /* pulse dot */
+    @keyframes pulse-ring {
+      0%   { transform: scale(1);   opacity: 1; }
+      100% { transform: scale(2.5); opacity: 0; }
+    }
+    .pulse-dot {
+      display: inline-block;
+      position: relative;
+      width: 10px; height: 10px;
+      margin-right: 8px;
+      vertical-align: middle;
+    }
+    .pulse-dot::before, .pulse-dot::after {
+      content: '';
+      position: absolute;
+      inset: 0;
+      border-radius: 50%;
+      background: var(--accent);
+    }
+    .pulse-dot::before {
+      animation: pulse-ring 1.5s ease-out infinite;
+    }
+
+    /* scroll indicator */
+    .scroll-hint {
+      position: absolute;
+      bottom: 2rem;
+      left: 50%;
+      transform: translateX(-50%);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 0.4rem;
+      color: var(--muted);
+      font-size: 0.72rem;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+    }
+    @keyframes bounce {
+      0%, 100% { transform: translateY(0); }
+      50%       { transform: translateY(5px); }
+    }
+    .scroll-hint::after {
+      content: '↓';
+      font-size: 1rem;
+      animation: bounce 1.8s ease-in-out infinite;
+    }
+
+    /* ── SECTIONS SHARED ── */
+    section { padding: 6rem 6vw; }
+    .section-label {
+      font-size: 0.72rem;
+      letter-spacing: 0.22em;
+      text-transform: uppercase;
+      color: var(--accent);
+      margin-bottom: 0.8rem;
+    }
+    .section-title {
+      font-size: clamp(1.8rem, 4vw, 2.8rem);
+      font-weight: 800;
+      letter-spacing: -0.02em;
+      margin-bottom: 1rem;
+    }
+    .section-desc {
+      color: var(--muted);
+      max-width: 540px;
+      margin-bottom: 3.5rem;
+      font-size: 1rem;
+    }
+    .divider {
+      width: 48px; height: 3px;
+      background: var(--accent);
+      margin: 1rem 0 2rem;
+      border-radius: 2px;
+    }
+
+    /* ── SERVICES ── */
+    #services { background: var(--bg2); }
+
+    .services-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+      gap: 1.5rem;
+    }
+
+    .card {
+      background: var(--bg3);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 2rem;
+      transition: border-color 0.25s, transform 0.25s;
+      position: relative;
+      overflow: hidden;
+    }
+    .card::before {
+      content: '';
+      position: absolute;
+      top: 0; left: 0; right: 0;
+      height: 2px;
+      background: var(--accent);
+      transform: scaleX(0);
+      transform-origin: left;
+      transition: transform 0.3s;
+    }
+    .card:hover { border-color: rgba(224,25,58,0.5); transform: translateY(-4px); }
+    .card:hover::before { transform: scaleX(1); }
+
+    .card-icon {
+      font-size: 2rem;
+      margin-bottom: 1rem;
+      display: block;
+    }
+    .card h3 {
+      font-size: 1.1rem;
+      font-weight: 700;
+      margin-bottom: 0.6rem;
+    }
+    .card p {
+      color: var(--muted);
+      font-size: 0.9rem;
+      line-height: 1.65;
+    }
+
+    /* ── ABOUT ── */
+    #about {
+      background: var(--bg);
+      display: flex;
+      align-items: center;
+    }
+    .about-inner {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 5rem;
+      align-items: center;
+      max-width: 1100px;
+      margin: 0 auto;
+      width: 100%;
+    }
+    .about-text .section-desc { margin-bottom: 2rem; }
+    .about-text p {
+      color: var(--muted);
+      font-size: 0.95rem;
+      line-height: 1.8;
+      margin-bottom: 1rem;
+    }
+
+    .stat-row {
+      display: flex;
+      gap: 2.5rem;
+      margin-top: 2.5rem;
+    }
+    .stat h4 {
+      font-size: 2rem;
+      font-weight: 900;
+      color: var(--accent);
+      line-height: 1;
+    }
+    .stat span {
+      font-size: 0.78rem;
+      color: var(--muted);
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      display: block;
+      margin-top: 0.3rem;
+    }
+
+    /* heartbeat visual */
+    .about-visual {
+      position: relative;
+      height: 320px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .hb-ring {
+      position: absolute;
+      border-radius: 50%;
+      border: 1px solid rgba(224,25,58,0.2);
+    }
+    @keyframes ripple {
+      0%   { transform: scale(0.6); opacity: 0.6; }
+      100% { transform: scale(1);   opacity: 0; }
+    }
+    .hb-ring:nth-child(1) { width: 280px; height: 280px; animation: ripple 2.4s ease-out infinite 0s; }
+    .hb-ring:nth-child(2) { width: 220px; height: 220px; animation: ripple 2.4s ease-out infinite 0.6s; }
+    .hb-ring:nth-child(3) { width: 160px; height: 160px; animation: ripple 2.4s ease-out infinite 1.2s; }
+    .hb-core {
+      width: 90px; height: 90px;
+      border-radius: 50%;
+      background: radial-gradient(circle, rgba(224,25,58,0.4), rgba(224,25,58,0.05));
+      border: 1px solid rgba(224,25,58,0.6);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 2rem;
+      z-index: 1;
+    }
+
+    /* ── EKG SWEEP OVERLAY ── */
+    #ekg-overlay {
+      position: fixed;
+      inset: 0;
+      z-index: 999;
+      pointer-events: none;
+      opacity: 0;
+      transition: opacity 0.4s ease;
+    }
+    #ekg-overlay.visible { opacity: 1; }
+    #ekg-overlay.fade-out { opacity: 0; }
+
+    #ekg-sweep-path {
+      fill: none;
+      stroke: #f5b833;
+      stroke-width: 0.3;
+      filter: drop-shadow(0 0 2px rgba(245,184,51,0.55));
+    }
+    #ekg-glow-path {
+      fill: none;
+      stroke: rgba(245,184,51,0.05);
+      stroke-width: 1.5;
+      filter: blur(2px);
+    }
+
+    /* ── CONTACT ── */
+    #contact {
+      background: var(--bg2);
+      text-align: center;
+    }
+    #contact .section-desc {
+      margin-left: auto;
+      margin-right: auto;
+    }
+    .contact-links {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 1.2rem;
+      flex-wrap: wrap;
+    }
+    .contact-link {
+      display: flex;
+      align-items: center;
+      gap: 0.55rem;
+      padding: 0.85rem 1.8rem;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      background: var(--bg3);
+      color: var(--text);
+      text-decoration: none;
+      font-size: 0.9rem;
+      letter-spacing: 0.04em;
+      transition: border-color 0.2s, color 0.2s, transform 0.2s;
+    }
+    .contact-link:hover {
+      border-color: var(--accent);
+      color: var(--accent);
+      transform: translateY(-2px);
+    }
+    .contact-link .icon { font-size: 1.1rem; }
+
+    /* ── FOOTER ── */
+    footer {
+      background: var(--bg);
+      border-top: 1px solid var(--border);
+      padding: 2rem 6vw;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 1rem;
+    }
+    footer .logo { font-size: 1.1rem; }
+    footer p {
+      color: var(--muted);
+      font-size: 0.8rem;
+    }
+
+    /* ── RESPONSIVE ── */
+    @media (max-width: 768px) {
+      nav ul { display: none; }
+      .about-inner { grid-template-columns: 1fr; gap: 3rem; }
+      .about-visual { height: 220px; }
+      .stat-row { gap: 1.5rem; }
+      .btn-outline { display: none; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- NAV -->
+<nav>
+  <a href="#" class="logo">HYPER<span>TENSION</span></a>
+  <ul>
+    <li><a href="#services">서비스</a></li>
+    <li><a href="#about">회사 소개</a></li>
+    <li><a href="#contact">연락처</a></li>
+  </ul>
+</nav>
+
+<!-- HERO -->
+<section class="hero" id="home">
+  <!-- EKG decorative line -->
+  <div class="ekg-wrap" aria-hidden="true">
+    <svg viewBox="0 0 1200 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <polyline class="ekg-line" points="
+        0,50 100,50 130,50 145,10 160,90 175,10 190,90 205,50 250,50
+        300,50 400,50 430,50 445,10 460,90 475,10 490,90 505,50 550,50
+        600,50 700,50 730,50 745,10 760,90 775,10 790,90 805,50 850,50
+        900,50 1000,50 1030,50 1045,10 1060,90 1075,10 1090,90 1105,50 1200,50
+        1300,50 1400,50 1430,50 1445,10 1460,90 1475,10 1490,90 1505,50 1550,50
+        1600,50 1700,50 1730,50 1745,10 1760,90 1775,10 1790,90 1805,50 1900,50
+        2000,50 2100,50 2130,50 2145,10 2160,90 2175,10 2190,90 2205,50 2400,50
+      "
+      stroke="#e0193a" stroke-width="2" fill="none"/>
+    </svg>
+  </div>
+
+  <p class="hero-eyebrow"><span class="pulse-dot"></span>Indie Game Studio</p>
+  <h1>HYPER<span class="red">TENSION</span></h1>
+  <p class="hero-sub">심박이 고동치는 게임을 만듭니다</p>
+  <div>
+    <a href="#services" class="btn btn-primary">서비스 보기</a>
+    <a href="#about" class="btn btn-outline">회사 소개</a>
+  </div>
+
+  <div class="scroll-hint">Scroll</div>
+</section>
+
+<!-- SERVICES -->
+<section id="services">
+  <p class="section-label">What We Do</p>
+  <h2 class="section-title">우리가 만드는 것</h2>
+  <div class="divider"></div>
+  <p class="section-desc">
+    플레이어의 심장을 뛰게 만드는 인디 게임을 개발합니다.<br>
+    작지만 강렬한 경험을 추구합니다.
+  </p>
+
+  <div class="services-grid">
+    <div class="card">
+      <span class="card-icon">🎮</span>
+      <h3>인디 게임 개발</h3>
+      <p>독창적인 세계관과 강렬한 플레이 경험을 담은 인디 게임을 기획부터 출시까지 직접 제작합니다.</p>
+    </div>
+    <div class="card">
+      <span class="card-icon">⚔️</span>
+      <h3>게임 디자인</h3>
+      <p>긴장감 넘치는 전투 시스템, 몰입감 있는 스토리, 세밀하게 조율된 난이도로 최고의 경험을 설계합니다.</p>
+    </div>
+    <div class="card">
+      <span class="card-icon">🎵</span>
+      <h3>아트 & 사운드</h3>
+      <p>게임의 분위기를 완성하는 독자적인 아트 스타일과 심장을 울리는 사운드트랙을 제작합니다.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ABOUT -->
+<section id="about">
+  <div class="about-inner">
+    <div class="about-text">
+      <p class="section-label">About Us</p>
+      <h2 class="section-title">Hypertension은 누구인가</h2>
+      <div class="divider"></div>
+      <p>
+        저희는 플레이어의 심박수를 높이는 게임을 만드는 인디 게임 스튜디오입니다.
+        거대한 예산이 아닌, 날카로운 아이디어와 뜨거운 열정으로 승부합니다.
+      </p>
+      <p>
+        모든 게임은 한 번 잡으면 내려놓기 어려운 긴장감과 몰입감을 목표로 합니다.
+        작은 팀이지만 큰 울림을 만듭니다.
+      </p>
+      <div class="stat-row">
+        <div class="stat">
+          <h4>100%</h4>
+          <span>열정</span>
+        </div>
+        <div class="stat">
+          <h4>Indie</h4>
+          <span>독립 스튜디오</span>
+        </div>
+        <div class="stat">
+          <h4>↑BPM</h4>
+          <span>우리의 목표</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="about-visual" aria-hidden="true">
+      <div class="hb-ring"></div>
+      <div class="hb-ring"></div>
+      <div class="hb-ring"></div>
+      <div class="hb-core">♥</div>
+    </div>
+  </div>
+</section>
+
+<!-- CONTACT -->
+<section id="contact">
+  <p class="section-label">Contact</p>
+  <h2 class="section-title">함께 만들어 갑시다</h2>
+  <div class="divider" style="margin-left:auto;margin-right:auto;"></div>
+  <p class="section-desc">
+    협업, 퍼블리싱, 채용 문의 등 어떤 이야기든 환영합니다.
+  </p>
+  <div class="contact-links">
+    <a href="mailto:7hypertension@gmail.com" class="contact-link">
+      <span class="icon">✉️</span> 7hypertension@gmail.com
+    </a>
+    <a href="#" class="contact-link">
+      <span class="icon">🎮</span> Steam 페이지
+    </a>
+    <a href="#" class="contact-link">
+      <span class="icon">🐦</span> Twitter / X
+    </a>
+    <a href="#" class="contact-link">
+      <span class="icon">💬</span> Discord
+    </a>
+  </div>
+</section>
+
+<!-- FOOTER -->
+<footer>
+  <a href="#" class="logo">HYPER<span>TENSION</span></a>
+  <p>© 2026 Hypertension. All rights reserved.</p>
+</footer>
+
+<!-- EKG SWEEP OVERLAY -->
+<div id="ekg-overlay" aria-hidden="true">
+  <svg id="ekg-svg" width="100%" height="100%" preserveAspectRatio="none"
+       viewBox="0 0 1200 100" xmlns="http://www.w3.org/2000/svg">
+    <!-- glow layer -->
+    <path id="ekg-glow-path"
+      d="M-50,70 L218,70 L230,66 L242,70 L254,73 L263,55 L275,85 L290,67 L314,70
+         L813,70 L825,66 L837,70 L849,73 L858,55 L870,85 L885,67 L909,70 L1250,70"/>
+    <!-- sharp line -->
+    <path id="ekg-sweep-path"
+      d="M-50,70 L218,70 L230,66 L242,70 L254,73 L263,55 L275,85 L290,67 L314,70
+         L813,70 L825,66 L837,70 L849,73 L858,55 L870,85 L885,67 L909,70 L1250,70"/>
+  </svg>
+</div>
+
+<script>
+  // ── EKG Sweep Animation ──
+  const overlay  = document.getElementById('ekg-overlay');
+  const mainPath = document.getElementById('ekg-sweep-path');
+  const glowPath = document.getElementById('ekg-glow-path');
+
+  function runEKG() {
+    // measure path length after SVG is rendered
+    const len = mainPath.getTotalLength();
+
+    // reset both paths
+    [mainPath, glowPath].forEach(p => {
+      p.style.strokeDasharray  = len;
+      p.style.strokeDashoffset = len;
+      p.style.transition = 'none';
+    });
+
+    // show overlay
+    overlay.classList.remove('fade-out');
+    overlay.classList.add('visible');
+
+    // small tick so transition resets
+    requestAnimationFrame(() => requestAnimationFrame(() => {
+      [mainPath, glowPath].forEach(p => {
+        p.style.transition = `stroke-dashoffset 1.8s cubic-bezier(0.4,0,0.6,1)`;
+        p.style.strokeDashoffset = '0';
+      });
+
+      // after draw completes, fade out
+      setTimeout(() => {
+        overlay.classList.add('fade-out');
+        setTimeout(() => overlay.classList.remove('visible', 'fade-out'), 500);
+      }, 1900);
+    }));
+  }
+
+  // 첫 실행 3초 후, 이후 15초마다
+  setTimeout(() => { runEKG(); setInterval(runEKG, 15000); }, 3000);
+</script>
+
+</body>
+</html>
